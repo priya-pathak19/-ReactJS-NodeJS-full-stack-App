@@ -2,10 +2,10 @@
   "name": "crash-course",
   "version": "1.0.0",
   "description": "a node crash course",
-  "main": "server.js",
+  "main": "app.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "nodemon --exec ts-node app.ts"
   },
   "repository": {
     "type": "git",
@@ -18,11 +18,19 @@
   },
   "homepage": "https://github.com/iamshaunjp/node-crash-course#readme",
   "dependencies": {
+    "@temporalio/client": "^1.14.1",
+    "@temporalio/worker": "^1.14.1",
+    "@temporalio/workflow": "^1.14.1",
     "ejs": "^3.1.2",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
     "mongodb": "^7.1.0",
     "mongoose": "^5.9.10",
     "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
