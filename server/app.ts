@@ -1,5 +1,9 @@
+import workflowRoutes from "./routes/workflowRoutes";
+import cors from "cors";
+
 const express = require("express");
 // const morgan = require("morgan");
+
 const mongoose = require("mongoose");
 // const blogRoutes = require("./routes/blogRoutes");
 
@@ -44,13 +48,19 @@ const mongoose = require("mongoose");
 // -----Full stack with react api routes-----
 const app = express();
 
-const dbURI =
-  "mongodb+srv://priya-19:123456priya@cluster0.nh0urni.mongodb.net/?appName=Cluster0";
+// const dbURI =
+//   "mongodb+srv://priya-19:123456priya@cluster0.nh0urni.mongodb.net/?appName=Cluster0";
 
-mongoose
-  .connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then((result) => app.listen(3000))
-  .catch((err) => console.log(err));
+// mongoose
+//   .connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then((result) => app.listen(3000))
+//   .catch((err) => console.log(err));
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 app.use((req, res, next) => {
   res.locals.path = req.path;
@@ -64,7 +74,13 @@ app.get("/api/hello", (req, res) => {
   res.json({ message: "Hello from backend 👋" });
 });
 
+app.use("/api/workflow", workflowRoutes);
+
 // 404 page
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
+});
+
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
 });
