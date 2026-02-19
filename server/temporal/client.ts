@@ -46,7 +46,8 @@
 //----testing with react + node
 import { Client, Connection } from "@temporalio/client";
 import { nanoid } from "nanoid";
-import { example } from "./workflow";
+// import { example } from "./workflow";
+import { approvalWorkflow } from "./workflow";
 
 let client: Client | null = null;
 
@@ -62,14 +63,29 @@ async function getClient() {
   return client;
 }
 
-export async function startExampleWorkflow(name: string) {
-  const temporalClient = await getClient();
+// export async function startExampleWorkflow(name: string) {
+//   const temporalClient = await getClient();
 
-  const handle = await temporalClient.workflow.start(example, {
-    taskQueue: "hello-world",
-    args: [name], // argument to be passed in "example" workflow
-    workflowId: `workflow-${nanoid()}`,
+//   const handle = await temporalClient.workflow.start(approvalWorkflow, {
+//     taskQueue: "hello-world",
+//     args: [name], // argument to be passed in "example" workflow
+//     workflowId: `workflow-${nanoid()}`,
+//   });
+
+//   return handle;
+// }
+
+export async function startApprovalWorkflow(requestId: string) {
+  const c = await getClient();
+
+  return c.workflow.start("approvalWorkflow", {
+    taskQueue: "approval-queue",
+    workflowId: requestId,
+    args: [requestId],
   });
+}
 
-  return handle;
+export async function getWorkflowHandle(id: string) {
+  const c = await getClient();
+  return c.workflow.getHandle(id);
 }
