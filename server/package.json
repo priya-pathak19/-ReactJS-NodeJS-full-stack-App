@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon --exec ts-node app.ts",
-    "start:worker": "npx ts-node temporal/worker.ts"
+    "start:worker": "npx ts-node temporal/worker.ts",
+    "start:client": "npx ts-node temporal/client.ts"
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,8 @@
     "lodash": "^4.17.15",
     "mongodb": "^7.1.0",
     "mongoose": "^5.9.10",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "nanoid": "^5.1.6"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
