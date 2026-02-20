@@ -36,42 +36,63 @@ import {
   defineQuery,
   setHandler,
   condition,
-  log,
+  proxyActivities,
 } from "@temporalio/workflow";
-import { proxyActivities } from "@temporalio/workflow";
 import type * as activities from "./activities";
 
+/**
+ * Activities
+ */
 const { sendApprovalEmail } = proxyActivities<typeof activities>({
   startToCloseTimeout: "1 minute",
+  retry: {
+    maximumAttempts: 3,
+  },
 });
 
-// 🔔 signals
-export const approveSignal = defineSignal<[]>("approve");
-export const rejectSignal = defineSignal<[]>("reject");
+/**
+ * Signals
+ */
+export const approveSignal = defineSignal("approve");
+export const rejectSignal = defineSignal("reject");
 
-// 🔍 query (for UI)
+/**
+ * Query
+ */
 export const statusQuery = defineQuery<string>("status");
 
-export async function approvalWorkflow(requestId: string): Promise<string> {
-  let status = "WAITING_FOR_APPROVAL";
+/**
+ * Workflow
+ */
+export async function approvalWorkflow(
+  requestId: string,
+  approverEmail: string,
+): Promise<string> {
+  let status: "WAITING_FOR_APPROVAL" | "APPROVED" | "REJECTED" =
+    "WAITING_FOR_APPROVAL";
 
+  // 🔍 Query handler
   setHandler(statusQuery, () => status);
 
+  // ✅ Approve signal
   setHandler(approveSignal, () => {
+    console.log("🔥 APPROVE signal received");
     status = "APPROVED";
-    log.info("APPROVE SIGNAL HANDLER EXECUTED");
   });
 
+  // ❌ Reject signal
   setHandler(rejectSignal, () => {
+    console.log("🔥 REJECT signal received");
     status = "REJECTED";
   });
 
-  log.info("Workflow started", { requestId });
-  log.info("Signal received", { status });
+  // 📧 Step 1: Send approval email
+  await sendApprovalEmail(requestId, approverEmail);
 
-  await sendApprovalEmail(requestId);
-
+  // ⏸ Step 2: Wait for human action
   await condition(() => status !== "WAITING_FOR_APPROVAL");
 
+  // ✅ Step 3: Done
+  console.log(`✅ Workflow completed with status: ${status}`);
   return status;
 }

@@ -45,7 +45,7 @@
 
 //----testing with react + node
 import { Client, Connection } from "@temporalio/client";
-import { nanoid } from "nanoid";
+// import { nanoid } from "nanoid";
 // import { example } from "./workflow";
 import { approvalWorkflow } from "./workflow";
 
@@ -78,10 +78,10 @@ async function getClient() {
 export async function startApprovalWorkflow(requestId: string) {
   const c = await getClient();
 
-  return c.workflow.start("approvalWorkflow", {
+  return c.workflow.start(approvalWorkflow, {
     taskQueue: "approval-queue",
     workflowId: requestId,
-    args: [requestId],
+    args: [requestId, "priyapathak.work@gmail.com"],
   });
 }
 

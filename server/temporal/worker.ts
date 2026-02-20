@@ -9,6 +9,7 @@ import { NativeConnection, Worker } from "@temporalio/worker";
 // NativeConnection → low-level gRPC (binary messages using Protocol Buffers) connection to Temporal Server -> gRPC is a high-performance communication protocol.
 import * as activities from "./activities";
 // activities → your real activity implementations (DB calls, APIs, etc.)
+import "dotenv/config";
 
 // This wraps the worker lifecycle:
 // connect

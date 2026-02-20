@@ -51,12 +51,27 @@ router.post("/start", async (req, res) => {
   }
 });
 
-router.post("/approve/:id", async (req, res) => {
+// Dashboard UI approval
+// router.post("/approve/:id", async (req, res) => {
+//   const handle = await getWorkflowHandle(req.params.id);
+//   await handle.signal("approve");
+//   console.log("APPROVE called for workflowId:", req.params.id);
+
+//   res.json({ status: "APPROVED" });
+// });
+
+router.get("/approve/:id", async (req, res) => {
   const handle = await getWorkflowHandle(req.params.id);
   await handle.signal("approve");
-  console.log("APPROVE called for workflowId:", req.params.id);
 
-  res.json({ status: "APPROVED" });
+  res.send("<h2>✅ Approved</h2>You may close this window.");
+});
+
+router.get("/reject/:id", async (req, res) => {
+  const handle = await getWorkflowHandle(req.params.id);
+  await handle.signal("reject");
+
+  res.send("<h2>❌ Rejected</h2>You may close this window.");
 });
 
 router.get("/status/:id", async (req, res) => {

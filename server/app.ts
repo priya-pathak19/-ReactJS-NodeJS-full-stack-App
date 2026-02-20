@@ -1,5 +1,6 @@
 import workflowRoutes from "./routes/workflowRoutes";
 import cors from "cors";
+import "dotenv/config";
 
 const express = require("express");
 // const morgan = require("morgan");
