@@ -3,6 +3,7 @@ import {
   getWorkflowHandle,
   startApprovalWorkflow,
   startFetchSlackUsersWorkflow,
+  startSlackApprovalWorkflow,
 } from "../temporal/client";
 import { WorkflowExecutionAlreadyStartedError } from "@temporalio/client";
 
@@ -89,6 +90,22 @@ router.get("/status/:id", async (req, res) => {
 router.post("/slack/users", async (_req, res) => {
   const users = await startFetchSlackUsersWorkflow();
   res.json(users);
+});
+
+router.post("/slack/notify", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      error: "email is required",
+    });
+  }
+
+  await startSlackApprovalWorkflow(email, "Please approve the request ✅");
+
+  res.status(202).json({
+    status: "Slack approval request sent",
+  });
 });
 
 export default router;

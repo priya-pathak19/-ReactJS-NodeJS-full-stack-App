@@ -68,6 +68,17 @@ function App() {
     setStatus("APPROVED"); // optimistic
   }
 
+  async function approveSlack() {
+    await fetch("/api/workflow/slack/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "priyapathak.work@gmail.com",
+      }),
+    });
+    setStatus("APPROVED");
+  }
+
   const fetchSlackUsers = async () => {
     const res = await fetch("/api/workflow/slack/users", {
       method: "POST",
@@ -96,6 +107,8 @@ function App() {
           <p>{user.email}</p>
         </div>
       ))}
+
+      <button onClick={approveSlack}>Notify Slack user</button>
     </div>
   );
 }

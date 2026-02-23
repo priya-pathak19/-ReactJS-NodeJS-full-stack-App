@@ -78,3 +78,20 @@ function getRole(user: any) {
   if (user.is_restricted) return "MULTI_CHANNEL_GUEST";
   return "MEMBER";
 }
+
+export async function sendSlackDMByEmail(email: string, message: string) {
+  // 1. Find user by email
+  const userRes = await slack.users.lookupByEmail({ email });
+  const userId = userRes.user.id;
+
+  // 2. Open DM
+  const dm = await slack.conversations.open({
+    users: userId,
+  });
+
+  // 3. Send message
+  await slack.chat.postMessage({
+    channel: dm.channel.id,
+    text: message,
+  });
+}

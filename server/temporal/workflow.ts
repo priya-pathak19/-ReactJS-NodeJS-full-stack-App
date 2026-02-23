@@ -43,14 +43,13 @@ import type * as activities from "./activities";
 /**
  * Activities
  */
-const { sendApprovalEmail, fetchSlackUsers } = proxyActivities<
-  typeof activities
->({
-  startToCloseTimeout: "2 minute",
-  retry: {
-    maximumAttempts: 3,
-  },
-});
+const { sendApprovalEmail, fetchSlackUsers, sendSlackDMByEmail } =
+  proxyActivities<typeof activities>({
+    startToCloseTimeout: "2 minute",
+    retry: {
+      maximumAttempts: 3,
+    },
+  });
 
 // -----------Get Slack Users--------------
 export async function getSlackUsersWorkflow() {
@@ -58,6 +57,14 @@ export async function getSlackUsersWorkflow() {
 
   return users;
 }
+
+export async function sendSlackApprovalWorkflow(
+  email: string,
+  message: string,
+) {
+  await sendSlackDMByEmail(email, message);
+}
+// -- Email ------------------------
 
 /**
  * Signals

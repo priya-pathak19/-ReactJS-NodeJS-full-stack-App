@@ -47,7 +47,11 @@
 import { Client, Connection } from "@temporalio/client";
 // import { nanoid } from "nanoid";
 // import { example } from "./workflow";
-import { approvalWorkflow, getSlackUsersWorkflow } from "./workflow";
+import {
+  approvalWorkflow,
+  getSlackUsersWorkflow,
+  sendSlackApprovalWorkflow,
+} from "./workflow";
 
 let client: Client | null = null;
 
@@ -96,5 +100,21 @@ export async function startFetchSlackUsersWorkflow() {
   return c.workflow.execute(getSlackUsersWorkflow, {
     taskQueue: "slack-task-queue",
     workflowId: `slack-users-${Date.now()}`,
+  });
+}
+
+/**
+ * Start Slack approval workflow
+ */
+export async function startSlackApprovalWorkflow(
+  email: string,
+  message: string,
+) {
+  const c = await getClient();
+
+  return c.workflow.start(sendSlackApprovalWorkflow, {
+    taskQueue: "slack-task-queue",
+    workflowId: `slack-approval-${email}-${Date.now()}`,
+    args: [email, message],
   });
 }
