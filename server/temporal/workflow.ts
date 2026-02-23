@@ -33,119 +33,88 @@
 
 import {
   defineSignal,
-  defineQuery,
   setHandler,
   condition,
   proxyActivities,
+  defineQuery,
 } from "@temporalio/workflow";
 import type * as activities from "./activities";
-import * as workflow from "@temporalio/workflow";
 
-/**
- * Activities
- */
-const {
-  sendApprovalEmail,
-  fetchSlackUsers,
-  sendSlackDMByEmail,
-  sendSlackApprovalMessage,
-} = proxyActivities<typeof activities>({
-  startToCloseTimeout: "2 minute",
-  retry: {
-    maximumAttempts: 3,
-  },
-});
+type ApprovalStep =
+  | "INITIATED"
+  | "EMAIL_SENT"
+  | "EMAIL_LINK_CLICKED"
+  | "SLACK_SENT"
+  | "APPROVED"
+  | "REJECTED";
 
-// -----------Get Slack Users--------------
-export async function getSlackUsersWorkflow() {
-  const users = await fetchSlackUsers();
-
-  return users;
-}
-
-export async function sendSlackApprovalWorkflow(
-  email: string,
-  message: string,
-) {
-  await sendSlackDMByEmail(email, message);
-}
-// -- Email ------------------------
-
-/**
- * Signals
- */
+export const emailLinkClickedSignal = defineSignal("emailLinkClicked");
 export const approveSignal = defineSignal("approve");
 export const rejectSignal = defineSignal("reject");
 
 /**
- * Query
+ * 👇 QUERY exposed to frontend
  */
-export const statusQuery = defineQuery<string>("status");
+export const statusQuery = defineQuery<{
+  step: ApprovalStep;
+  decision: "APPROVED" | "REJECTED" | null;
+}>("status");
 
-/**
- * Workflow
- */
+const { sendApprovalEmail, sendSlackApprovalMessage, sendFinalResultEmail } =
+  proxyActivities<typeof activities>({
+    startToCloseTimeout: "2 minutes",
+  });
+
 export async function approvalWorkflow(
   requestId: string,
   approverEmail: string,
-): Promise<string> {
-  let status: "WAITING_FOR_APPROVAL" | "APPROVED" | "REJECTED" =
-    "WAITING_FOR_APPROVAL";
-
-  // 🔍 Query handler
-  setHandler(statusQuery, () => status);
-
-  // ✅ Approve signal
-  setHandler(approveSignal, () => {
-    console.log("🔥 APPROVE signal received");
-    status = "APPROVED";
-  });
-
-  // ❌ Reject signal
-  setHandler(rejectSignal, () => {
-    console.log("🔥 REJECT signal received");
-    status = "REJECTED";
-  });
-
-  // 📧 Step 1: Send approval email
-  await sendApprovalEmail(requestId, approverEmail);
-
-  // ⏸ Step 2: Wait for human action
-  await condition(() => status !== "WAITING_FOR_APPROVAL");
-
-  // ✅ Step 3: Done
-  console.log(`✅ Workflow completed with status: ${status}`);
-  return status;
-}
-
-// Slack approval :
-
-export const approveSignalSlack = defineSignal("approve");
-export const rejectSignalSlack = defineSignal("reject");
-
-export async function approvalWorkflowSlack(
-  requestId: string,
-  approverEmail: string,
 ) {
-  let status: "PENDING" | "APPROVED" | "REJECTED" = "PENDING";
+  let step: ApprovalStep = "INITIATED";
+  let decision: "APPROVED" | "REJECTED" | null = null;
 
-  // ✅ register signal handlers
-  setHandler(approveSignalSlack, () => {
-    status = "APPROVED";
+  /**
+   * 👇 THIS is what frontend reads
+   */
+  setHandler(statusQuery, () => ({
+    step,
+    decision,
+  }));
+
+  // --- signal handlers ---
+  setHandler(emailLinkClickedSignal, () => {
+    step = "EMAIL_LINK_CLICKED";
   });
 
-  setHandler(rejectSignalSlack, () => {
-    status = "REJECTED";
+  setHandler(approveSignal, () => {
+    decision = "APPROVED";
+    step = "APPROVED";
   });
 
-  // ✅ CALL ACTIVITY HERE (this was missing)
+  setHandler(rejectSignal, () => {
+    decision = "REJECTED";
+    step = "REJECTED";
+  });
+
+  // 1️⃣ Send initial email
+  await sendApprovalEmail(requestId, approverEmail);
+  step = "EMAIL_SENT";
+
+  // 2️⃣ Wait for email link click
+  await condition(() => step === "EMAIL_LINK_CLICKED");
+
+  // 3️⃣ Send Slack DM
   await sendSlackApprovalMessage(approverEmail, requestId);
+  step = "SLACK_SENT";
 
-  // ✅ wait for Slack approval
-  await condition(() => status !== "PENDING");
+  // 4️⃣ Wait for Slack decision
+  await condition(() => decision !== null);
+
+  // 5️⃣ Send final result email
+  await sendFinalResultEmail(approverEmail, requestId, decision!);
 
   return {
     requestId,
-    status,
+    status: decision,
+    step,
   };
 }

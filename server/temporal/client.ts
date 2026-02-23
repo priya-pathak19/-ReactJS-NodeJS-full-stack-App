@@ -47,17 +47,15 @@
 import { Client, Connection } from "@temporalio/client";
 // import { nanoid } from "nanoid";
 // import { example } from "./workflow";
-import {
-  approvalWorkflow,
-  approvalWorkflowSlack,
-  getSlackUsersWorkflow,
-  sendSlackApprovalWorkflow,
-} from "./workflow";
+import { approvalWorkflow } from "./workflow";
 
 let client: Client | null = null;
 
 // reuse connection (important in real apps)
-async function getClient() {
+/**
+ * Singleton Temporal client
+ */
+export async function getClient() {
   if (!client) {
     const connection = await Connection.connect({
       address: "localhost:7233",
@@ -80,55 +78,68 @@ async function getClient() {
 //   return handle;
 // }
 
-export async function startApprovalWorkflow(requestId: string) {
-  const c = await getClient();
-
-  return c.workflow.start(approvalWorkflow, {
-    taskQueue: "approval-queue",
-    workflowId: requestId,
-    args: [requestId, "priyapathak.work@gmail.com"],
-  });
-}
-
-export async function getWorkflowHandle(id: string) {
-  const c = await getClient();
-  return c.workflow.getHandle(id);
-}
-
-export async function startFetchSlackUsersWorkflow() {
-  const c = await getClient();
-
-  return c.workflow.execute(getSlackUsersWorkflow, {
-    taskQueue: "slack-task-queue",
-    workflowId: `slack-users-${Date.now()}`,
-  });
-}
-
 /**
- * Start Slack approval workflow
+ * 1️⃣ Start FULL approval flow:
+ * Email → Slack → Final email
+ *
+ * This is the MAIN entry point from frontend
  */
-export async function startSlackApprovalWorkflow(
-  email: string,
-  message: string,
-) {
-  const c = await getClient();
-
-  return c.workflow.start(sendSlackApprovalWorkflow, {
-    taskQueue: "slack-task-queue",
-    workflowId: `slack-approval-${email}-${Date.now()}`,
-    args: [email, message],
-  });
-}
-
-export async function startApprovalWorkflowSlack(
+export async function startApprovalWorkflow(
   requestId: string,
   approverEmail: string,
 ) {
   const c = await getClient();
 
-  await c.workflow.start(approvalWorkflowSlack, {
-    taskQueue: "slack-task-queue",
+  return c.workflow.start("approvalWorkflow", {
+    taskQueue: "approval-queue",
     workflowId: requestId,
     args: [requestId, approverEmail],
   });
 }
+
+export async function getWorkflowHandle(workflowId: string) {
+  const c = await getClient();
+  return c.workflow.getHandle(workflowId);
+}
+/**
+ * 2️⃣ Get workflow handle
+ * Used for:
+ * - email link click
+ * - Slack approve / reject
+ * - status queries
+ */
+// export async function getWorkflowHandle(workflowId: string) {
+//   const c = await getClient();
+//   return c.workflow.getHandle(workflowId);
+// }
+
+// /**
+//  * 3️⃣ Fetch Slack users (utility / admin workflow)
+//  * This is independent from approval flow
+//  */
+// export async function startFetchSlackUsersWorkflow() {
+//   const c = await getClient();
+
+//   return c.workflow.execute(getSlackUsersWorkflow, {
+//     taskQueue: "slack-task-queue",
+//     workflowId: `slack-users-${Date.now()}`,
+//   });
+// }
+
+// /**
+//  * 4️⃣ (Optional / legacy)
+//  * Slack-only approval workflow
+//  * Keep ONLY if you still use it separately
+//  */
+// export async function startApprovalWorkflowSlack(
+//   requestId: string,
+//   approverEmail: string,
+// ) {
+//   const c = await getClient();
+
+//   return c.workflow.start(approvalWorkflowSlack, {
+//     taskQueue: "slack-task-queue",
+//     workflowId: requestId,
+//     args: [requestId, approverEmail],
+//   });
+// }

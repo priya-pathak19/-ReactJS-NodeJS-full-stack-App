@@ -14,8 +14,7 @@ export async function sendApprovalEmail(
   requestId: string,
   approverEmail: string,
 ) {
-  const approveUrl = `http://localhost:3000/api/workflow/approve/${requestId}`;
-  const rejectUrl = `http://localhost:3000/api/workflow/reject/${requestId}`;
+  const slackTriggerUrl = `http://localhost:3000/api/workflow/email-click/${requestId}`;
 
   const msg = {
     to: approverEmail,
@@ -25,9 +24,9 @@ export async function sendApprovalEmail(
       <h3>Approval Needed</h3>
       <p>Please approve or reject the request.</p>
       <p>
-        <a href="${approveUrl}" style="color: green;">✅ Approve</a>
-        &nbsp;|&nbsp;
-        <a href="${rejectUrl}" style="color: red;">❌ Reject</a>
+      <a href="${slackTriggerUrl}">
+        🔔 Open Slack Approval
+      </a>
       </p>
     `,
   };
@@ -36,7 +35,7 @@ export async function sendApprovalEmail(
 
   await sgMail.send(msg);
 
-  console.log("📧 Approval email sent to", approverEmail);
+  console.log("Approval email sent to", approverEmail);
 }
 
 // SLACK-TEST-------------
@@ -135,5 +134,21 @@ export async function sendSlackApprovalMessage(
         ],
       },
     ],
+  });
+}
+
+export async function sendFinalResultEmail(
+  approverEmail: string,
+  requestId: string,
+  decision: "APPROVED" | "REJECTED",
+) {
+  await sgMail.send({
+    to: approverEmail,
+    from: "priyapathak.work@gmail.com",
+    subject: `Request ${decision}`,
+    html: `
+      <h3>Request ${decision}</h3>
+      <p>Request ID: ${requestId}</p>
+    `,
   });
 }

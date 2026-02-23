@@ -1,26 +1,14 @@
 import { useEffect, useState } from "react";
 
-export type SlackUserRole =
-  | "PRIMARY_OWNER"
-  | "OWNER"
-  | "ADMIN"
-  | "MEMBER"
-  | "SINGLE_CHANNEL_GUEST"
-  | "MULTI_CHANNEL_GUEST";
-
-interface SlackUserBase {
-  id: string;
-  name: string;
-  role: SlackUserRole;
-  isActive: boolean;
-  email?: never;
-}
+type Step =
+  | "INITIATED"
+  | "EMAIL_SENT"
+  | "EMAIL_LINK_CLICKED"
+  | "SLACK_SENT"
+  | "APPROVED"
+  | "REJECTED";
 
 function App() {
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>();
-  const [slackUsers, setSlackUsers] = useState<SlackUserBase[]>();
-
   // async function startWorkflow() {
   //   setLoading(true);
   //   setResult(null);
@@ -35,64 +23,16 @@ function App() {
   //   setResult(data.result);
   //   setLoading(false);
   // }
-
-  async function start() {
-    const res = await fetch("/api/workflow/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requestId: "req-123" }),
-    });
-
-    const data = await res.json();
-    setWorkflowId(data.workflowId);
-  }
-
-  useEffect(() => {
-    if (!workflowId) return;
-    if (status === "APPROVED" || status === "REJECTED") return;
-
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/workflow/status/${workflowId}`);
-      const data = await res.json();
-      console.log(data, "data");
-      setStatus(data.status);
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [workflowId, status]);
-
-  async function approve() {
-    await fetch(`/api/workflow/approve/${workflowId}`, {
-      method: "POST",
-    });
-    setStatus("APPROVED"); // optimistic
-  }
-
-  async function approveSlack() {
-    await fetch("/api/workflow/slack/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: "priyapathak.work@gmail.com",
-      }),
-    });
-    setStatus("APPROVED");
-  }
-
-  const fetchSlackUsers = async () => {
-    const res = await fetch("/api/workflow/slack/users", {
-      method: "POST",
-    });
-
-    const data = await res.json();
-    setSlackUsers(data);
-  };
-  const [loading, setLoading] = useState(false);
-
-  const requestId = "REQ-123"; // could be prop / route param
+  const requestId = "REQ-123"; // could come from props / route
   const approverEmail = "priyapathak.work@gmail.com";
 
-  // 1️⃣ Send approval request (Slack DM is sent)
+  const [step, setStep] = useState<Step | null>(null);
+  const [decision, setDecision] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  /**
+   * 1️⃣ Start approval
+   */
   const startApproval = async () => {
     setLoading(true);
 
@@ -105,63 +45,56 @@ function App() {
       }),
     });
 
-    setStatus("PENDING");
+    setStep("EMAIL_SENT");
     setLoading(false);
   };
 
-  // 2️⃣ Poll approval status
+  /**
+   * 2️⃣ Poll status
+   */
   useEffect(() => {
-    if (status !== "PENDING") return;
+    if (!step || step === "APPROVED" || step === "REJECTED") return;
 
     const interval = setInterval(async () => {
       const res = await fetch(`/api/workflow/approval/${requestId}/status`);
       const data = await res.json();
 
-      setStatus(data.status);
-    }, 3000); // poll every 3s
+      setStep(data.step);
+      setDecision(data.decision ?? null);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [status, requestId]);
+  }, [step, requestId]);
 
-  console.log(workflowId, status);
+  console.log(decision, step, "decision");
 
   return (
-    <div>
-      <button onClick={start}>Start Workflow</button>
+    <div style={{ border: "1px solid #ccc", padding: 16 }}>
+      <h3>Approval Flow</h3>
 
-      <p>{status}</p>
-
-      <button onClick={approve}>Approve</button>
-
-      <button onClick={fetchSlackUsers}>Fetch All Slack users</button>
-      {slackUsers?.map((user) => (
-        <div>
-          <p>
-            {user?.name} has role {user.role}
-          </p>
-          <p>{user.email}</p>
-        </div>
-      ))}
-
-      <button onClick={approveSlack}>Notify Slack user</button>
-
-      <div style={{ padding: 16, border: "1px solid #ccc" }}>
-        <h3>Approval Request</h3>
-
-        <p>
-          Status: <strong>{status}</strong>
-        </p>
-
+      {!step && (
         <button onClick={startApproval} disabled={loading}>
-          Send Approval to Slack
+          Send Approval
         </button>
+      )}
 
-        {status === "PENDING" && <p>⏳ Waiting for approval on Slack…</p>}
+      {step && (
+        <>
+          <p>
+            <strong>Current step:</strong> {step}
+          </p>
 
-        {status === "APPROVED" && <p>✅ Approved</p>}
+          <ul>
+            <li>📧 Email sent</li>
+            <li>🔔 Email link clicked</li>
+            <li>💬 Slack approval sent</li>
+            <li>✅ Approved / ❌ Rejected</li>
+          </ul>
+        </>
+      )}
 
-        {status === "REJECTED" && <p>❌ Rejected</p>}
-      </div>
+      {step === "APPROVED" && <p>✅ Approved</p>}
+      {step === "REJECTED" && <p>❌ Rejected</p>}
     </div>
   );
 }
