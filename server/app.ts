@@ -68,6 +68,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.urlencoded({ extended: true }));
 // If a request contains JSON in its body, read it and convert it into a JavaScript object.
 app.use(express.json());
 

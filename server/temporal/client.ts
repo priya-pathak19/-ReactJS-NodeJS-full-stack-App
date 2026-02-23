@@ -49,6 +49,7 @@ import { Client, Connection } from "@temporalio/client";
 // import { example } from "./workflow";
 import {
   approvalWorkflow,
+  approvalWorkflowSlack,
   getSlackUsersWorkflow,
   sendSlackApprovalWorkflow,
 } from "./workflow";
@@ -116,5 +117,18 @@ export async function startSlackApprovalWorkflow(
     taskQueue: "slack-task-queue",
     workflowId: `slack-approval-${email}-${Date.now()}`,
     args: [email, message],
+  });
+}
+
+export async function startApprovalWorkflowSlack(
+  requestId: string,
+  approverEmail: string,
+) {
+  const c = await getClient();
+
+  await c.workflow.start(approvalWorkflowSlack, {
+    taskQueue: "slack-task-queue",
+    workflowId: requestId,
+    args: [requestId, approverEmail],
   });
 }

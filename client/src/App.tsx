@@ -87,6 +87,41 @@ function App() {
     const data = await res.json();
     setSlackUsers(data);
   };
+  const [loading, setLoading] = useState(false);
+
+  const requestId = "REQ-123"; // could be prop / route param
+  const approverEmail = "priyapathak.work@gmail.com";
+
+  // 1️⃣ Send approval request (Slack DM is sent)
+  const startApproval = async () => {
+    setLoading(true);
+
+    await fetch("/api/workflow/approval/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: requestId,
+        email: approverEmail,
+      }),
+    });
+
+    setStatus("PENDING");
+    setLoading(false);
+  };
+
+  // 2️⃣ Poll approval status
+  useEffect(() => {
+    if (status !== "PENDING") return;
+
+    const interval = setInterval(async () => {
+      const res = await fetch(`/api/workflow/approval/${requestId}/status`);
+      const data = await res.json();
+
+      setStatus(data.status);
+    }, 3000); // poll every 3s
+
+    return () => clearInterval(interval);
+  }, [status, requestId]);
 
   console.log(workflowId, status);
 
@@ -109,6 +144,24 @@ function App() {
       ))}
 
       <button onClick={approveSlack}>Notify Slack user</button>
+
+      <div style={{ padding: 16, border: "1px solid #ccc" }}>
+        <h3>Approval Request</h3>
+
+        <p>
+          Status: <strong>{status}</strong>
+        </p>
+
+        <button onClick={startApproval} disabled={loading}>
+          Send Approval to Slack
+        </button>
+
+        {status === "PENDING" && <p>⏳ Waiting for approval on Slack…</p>}
+
+        {status === "APPROVED" && <p>✅ Approved</p>}
+
+        {status === "REJECTED" && <p>❌ Rejected</p>}
+      </div>
     </div>
   );
 }

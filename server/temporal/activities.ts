@@ -95,3 +95,45 @@ export async function sendSlackDMByEmail(email: string, message: string) {
     text: message,
   });
 }
+
+export async function sendSlackApprovalMessage(
+  email: string,
+  requestId: string,
+) {
+  const userRes = await slack.users.lookupByEmail({ email });
+  const userId = userRes.user.id;
+
+  const dm = await slack.conversations.open({ users: userId });
+
+  await slack.chat.postMessage({
+    channel: dm.channel.id,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*Approval required*\nRequest ID: ${requestId}`,
+        },
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: { type: "plain_text", text: "✅ Approve" },
+            style: "primary",
+            action_id: "approve",
+            value: requestId,
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: "❌ Reject" },
+            style: "danger",
+            action_id: "reject",
+            value: requestId,
+          },
+        ],
+      },
+    ],
+  });
+}

@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getWorkflowHandle,
   startApprovalWorkflow,
+  startApprovalWorkflowSlack,
   startFetchSlackUsersWorkflow,
   startSlackApprovalWorkflow,
 } from "../temporal/client";
@@ -105,6 +106,58 @@ router.post("/slack/notify", async (req, res) => {
 
   res.status(202).json({
     status: "Slack approval request sent",
+  });
+});
+
+router.post("/slack/actions", async (req, res) => {
+  const payload = JSON.parse(req.body.payload);
+
+  const action = payload.actions[0];
+  const requestId = action.value;
+
+  const handle = await getWorkflowHandle(requestId);
+
+  if (action.action_id === "approve") {
+    await handle.signal("approve");
+  }
+
+  if (action.action_id === "reject") {
+    await handle.signal("reject");
+  }
+
+  // Respond quickly to Slack
+  res.json({
+    text: `Your response has been recorded ✅`,
+    replace_original: true,
+  });
+});
+
+router.get("/approval/:id/status", async (req, res) => {
+  const handle = await getWorkflowHandle(req.params.id);
+
+  const result = await handle.result(); // waits if still pending
+
+  res.json(result);
+});
+
+/**
+ * Start approval workflow + send Slack approval
+ */
+router.post("/approval/start", async (req, res) => {
+  const { id, email } = req.body;
+
+  if (!id || !email) {
+    return res.status(400).json({
+      error: "id and email are required",
+    });
+  }
+
+  // Start Temporal approval workflow
+  await startApprovalWorkflowSlack(id, email);
+
+  res.status(202).json({
+    status: "PENDING",
+    requestId: id,
   });
 });
 

@@ -39,17 +39,22 @@ import {
   proxyActivities,
 } from "@temporalio/workflow";
 import type * as activities from "./activities";
+import * as workflow from "@temporalio/workflow";
 
 /**
  * Activities
  */
-const { sendApprovalEmail, fetchSlackUsers, sendSlackDMByEmail } =
-  proxyActivities<typeof activities>({
-    startToCloseTimeout: "2 minute",
-    retry: {
-      maximumAttempts: 3,
-    },
-  });
+const {
+  sendApprovalEmail,
+  fetchSlackUsers,
+  sendSlackDMByEmail,
+  sendSlackApprovalMessage,
+} = proxyActivities<typeof activities>({
+  startToCloseTimeout: "2 minute",
+  retry: {
+    maximumAttempts: 3,
+  },
+});
 
 // -----------Get Slack Users--------------
 export async function getSlackUsersWorkflow() {
@@ -111,4 +116,36 @@ export async function approvalWorkflow(
   // ✅ Step 3: Done
   console.log(`✅ Workflow completed with status: ${status}`);
   return status;
+}
+
+// Slack approval :
+
+export const approveSignalSlack = defineSignal("approve");
+export const rejectSignalSlack = defineSignal("reject");
+
+export async function approvalWorkflowSlack(
+  requestId: string,
+  approverEmail: string,
+) {
+  let status: "PENDING" | "APPROVED" | "REJECTED" = "PENDING";
+
+  // ✅ register signal handlers
+  setHandler(approveSignalSlack, () => {
+    status = "APPROVED";
+  });
+
+  setHandler(rejectSignalSlack, () => {
+    status = "REJECTED";
+  });
+
+  // ✅ CALL ACTIVITY HERE (this was missing)
+  await sendSlackApprovalMessage(approverEmail, requestId);
+
+  // ✅ wait for Slack approval
+  await condition(() => status !== "PENDING");
+
+  return {
+    requestId,
+    status,
+  };
 }
