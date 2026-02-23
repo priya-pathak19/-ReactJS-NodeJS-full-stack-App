@@ -43,12 +43,21 @@ import type * as activities from "./activities";
 /**
  * Activities
  */
-const { sendApprovalEmail } = proxyActivities<typeof activities>({
-  startToCloseTimeout: "1 minute",
+const { sendApprovalEmail, fetchSlackUsers } = proxyActivities<
+  typeof activities
+>({
+  startToCloseTimeout: "2 minute",
   retry: {
     maximumAttempts: 3,
   },
 });
+
+// -----------Get Slack Users--------------
+export async function getSlackUsersWorkflow() {
+  const users = await fetchSlackUsers();
+
+  return users;
+}
 
 /**
  * Signals

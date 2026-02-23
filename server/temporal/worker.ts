@@ -33,7 +33,7 @@ async function run() {
     const worker = await Worker.create({
       connection,
       namespace: "default", // Logical isolation inside Temporal
-      taskQueue: "approval-queue", // Any workflow/activity sent to this queue will be picked up by this worker
+      taskQueue: "slack-task-queue", // Any workflow/activity sent to this queue will be picked up by this worker
       // Workflows are registered using a path as they run in a separate JS context. workflows run in a separate JS sandbox
       workflowsPath: require.resolve("./workflow"), // tells temporal where the workflow lives
       // Actual implementation for activities.

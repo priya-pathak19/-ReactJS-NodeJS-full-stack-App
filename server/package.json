@@ -21,6 +21,7 @@
   "homepage": "https://github.com/iamshaunjp/node-crash-course#readme",
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "@slack/web-api": "^7.14.1",
     "@temporalio/client": "^1.14.1",
     "@temporalio/worker": "^1.14.1",
     "@temporalio/workflow": "^1.14.1",

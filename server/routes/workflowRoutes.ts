@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { getWorkflowHandle, startApprovalWorkflow } from "../temporal/client";
+import {
+  getWorkflowHandle,
+  startApprovalWorkflow,
+  startFetchSlackUsersWorkflow,
+} from "../temporal/client";
 import { WorkflowExecutionAlreadyStartedError } from "@temporalio/client";
 
 const router = Router();
@@ -79,6 +83,12 @@ router.get("/status/:id", async (req, res) => {
   const status = await handle.query("status");
 
   res.json({ status });
+});
+
+// Slack routes
+router.post("/slack/users", async (_req, res) => {
+  const users = await startFetchSlackUsersWorkflow();
+  res.json(users);
 });
 
 export default router;

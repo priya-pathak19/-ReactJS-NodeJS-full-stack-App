@@ -1,5 +1,8 @@
 import sgMail from "@sendgrid/mail";
 import "dotenv/config";
+import { WebClient } from "@slack/web-api";
+
+const slack = new WebClient(process.env.SLACK_BOT_TOKEN);
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -34,4 +37,44 @@ export async function sendApprovalEmail(
   await sgMail.send(msg);
 
   console.log("📧 Approval email sent to", approverEmail);
+}
+
+// SLACK-TEST-------------
+
+// Fetch slack users
+export async function fetchSlackUsers() {
+  const users: any[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const res = await slack.users.list({
+      limit: 20,
+      cursor,
+    });
+
+    for (const u of res.members ?? []) {
+      if (u.deleted) continue;
+
+      users.push({
+        id: u.id,
+        name: u.real_name,
+        email: u.profile?.email,
+        role: getRole(u),
+        isActive: !u.deleted,
+      });
+    }
+
+    cursor = res.response_metadata?.next_cursor;
+  } while (cursor);
+
+  return users;
+}
+
+function getRole(user: any) {
+  if (user.is_primary_owner) return "PRIMARY_OWNER";
+  if (user.is_owner) return "OWNER";
+  if (user.is_admin) return "ADMIN";
+  if (user.is_ultra_restricted) return "SINGLE_CHANNEL_GUEST";
+  if (user.is_restricted) return "MULTI_CHANNEL_GUEST";
+  return "MEMBER";
 }

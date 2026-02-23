@@ -47,7 +47,7 @@
 import { Client, Connection } from "@temporalio/client";
 // import { nanoid } from "nanoid";
 // import { example } from "./workflow";
-import { approvalWorkflow } from "./workflow";
+import { approvalWorkflow, getSlackUsersWorkflow } from "./workflow";
 
 let client: Client | null = null;
 
@@ -88,4 +88,13 @@ export async function startApprovalWorkflow(requestId: string) {
 export async function getWorkflowHandle(id: string) {
   const c = await getClient();
   return c.workflow.getHandle(id);
+}
+
+export async function startFetchSlackUsersWorkflow() {
+  const c = await getClient();
+
+  return c.workflow.execute(getSlackUsersWorkflow, {
+    taskQueue: "slack-task-queue",
+    workflowId: `slack-users-${Date.now()}`,
+  });
 }
