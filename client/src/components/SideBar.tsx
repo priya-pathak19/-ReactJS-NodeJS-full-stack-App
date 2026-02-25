@@ -14,6 +14,12 @@ export function Sidebar({ activeTab, onSelect }: SidebarProps) {
       >
         ✅ Approval
       </button>
+      <button
+        className={`sidebar-item ${activeTab === "askllm" ? "active" : ""}`}
+        onClick={() => onSelect("askllm")}
+      >
+        💬 Ask LLM
+      </button>
     </aside>
   );
 }

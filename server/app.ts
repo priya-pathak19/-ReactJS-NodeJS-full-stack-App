@@ -1,6 +1,8 @@
 import workflowRoutes from "./routes/workflowRoutes";
 import cors from "cors";
 import "dotenv/config";
+import askRoute from "./routes/ragRoutes";
+import { bootstrapRAG } from "./rag/bootstrapRag";
 
 const express = require("express");
 // const morgan = require("morgan");
@@ -47,7 +49,6 @@ const mongoose = require("mongoose");
 // });
 
 // -----Full stack with react api routes-----
-const app = express();
 
 // const dbURI =
 //   "mongodb+srv://priya-19:123456priya@cluster0.nh0urni.mongodb.net/?appName=Cluster0";
@@ -57,32 +58,40 @@ const app = express();
 //   .then((result) => app.listen(3000))
 //   .catch((err) => console.log(err));
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  }),
-);
+const app = express();
 
-app.use((req, res, next) => {
-  res.locals.path = req.path;
-  next();
-});
+async function startServer() {
+  // Bootstrap RAG BEFORE accepting requests
+  await bootstrapRAG();
 
-app.use(express.urlencoded({ extended: true }));
-// If a request contains JSON in its body, read it and convert it into a JavaScript object.
-app.use(express.json());
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+    }),
+  );
 
-app.get("/api/hello", (req, res) => {
-  res.json({ message: "Hello from backend 👋" });
-});
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
 
-app.use("/api/workflow", workflowRoutes);
+  app.use("/api", askRoute);
+  app.use("/api/workflow", workflowRoutes);
 
-// 404 page
-app.use((req, res) => {
-  res.status(404).json({ error: "Not found" });
-});
+  app.get("/api/hello", (req, res) => {
+    res.json({ message: "Hello from backend 👋" });
+  });
 
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+  // 404
+  app.use((req, res) => {
+    res.status(404).json({ error: "Not found" });
+  });
+
+  app.listen(3000, () => {
+    console.log("Server running on port 3000");
+  });
+}
+
+// 🚀 Start everything
+startServer().catch((err) => {
+  console.error("Failed to start server", err);
+  process.exit(1);
 });
