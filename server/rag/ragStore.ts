@@ -4,4 +4,12 @@ type DocChunk = {
   source?: string; // filename (optional but useful)
 };
 
+// how vector store looks like with data
+// [
+//   {
+//     text: "How to deploy the service...",
+//     embedding: [0.12, 0.98, ...],
+//     source: "deployment.md"
+//   }
+// ]
 export const VECTOR_STORE: DocChunk[] = [];
