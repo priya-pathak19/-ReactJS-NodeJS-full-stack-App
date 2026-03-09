@@ -3,6 +3,8 @@ import "./styles.css";
 import { Sidebar } from "./components/SideBar";
 import { ApprovalPanel } from "./components/ApprovalPanel";
 import AskLLM from "./components/AskLLM";
+import AppGenerator from "./components/AppGenerator";
+import Test from "./components/TestComponent";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("approval");
@@ -14,6 +16,8 @@ export default function App() {
       <main className="main-content">
         {activeTab === "approval" && <ApprovalPanel />}
         {activeTab === "askllm" && <AskLLM />}
+        {activeTab === "app-generate" && <AppGenerator />}
+        {activeTab === "test" && <Test />}
       </main>
     </div>
   );

@@ -3,6 +3,7 @@ import cors from "cors";
 import "dotenv/config";
 import askRoute from "./routes/ragRoutes";
 import { bootstrapRAG } from "./rag/bootstrapRag";
+import agentRoutes from "./routes/agentRoutes";
 
 const express = require("express");
 // const morgan = require("morgan");
@@ -72,6 +73,9 @@ async function startServer() {
 
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+
+  // Agent orchestration
+  app.use("/api", agentRoutes);
 
   app.use("/api", askRoute);
   app.use("/api/workflow", workflowRoutes);

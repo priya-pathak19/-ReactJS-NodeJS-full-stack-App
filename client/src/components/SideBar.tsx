@@ -20,6 +20,18 @@ export function Sidebar({ activeTab, onSelect }: SidebarProps) {
       >
         💬 Ask LLM
       </button>
+      <button
+        className={`sidebar-item ${activeTab === "app-generate" ? "active" : ""}`}
+        onClick={() => onSelect("app-generate")}
+      >
+        ⚡ AppForge
+      </button>
+      <button
+        className={`sidebar-item ${activeTab === "Test" ? "active" : ""}`}
+        onClick={() => onSelect("test")}
+      >
+        Test
+      </button>
     </aside>
   );
 }
