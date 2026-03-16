@@ -78,19 +78,29 @@ function getRole(user: any) {
   return "MEMBER";
 }
 
-export async function sendSlackDMByEmail(email: string, message: string) {
-  // 1. Find user by email
-  const userRes = await slack.users.lookupByEmail({ email });
-  const userId = userRes.user.id;
+// export async function sendSlackDMByEmail(email: string, message: string) {
+//   // 1. Find user by email
+//   const userRes = await slack.users.lookupByEmail({ email });
+//   const userId = userRes.user.id;
 
-  // 2. Open DM
-  const dm = await slack.conversations.open({
-    users: userId,
-  });
+//   // 2. Open DM
+//   const dm = await slack.conversations.open({
+//     users: userId,
+//   });
 
-  // 3. Send message
+//   // 3. Send message
+//   await slack.chat.postMessage({
+//     channel: dm.channel.id,
+//     text: message,
+//   });
+// }
+
+export async function sendPrivateChannelMessage(
+  channel: string,
+  message: string,
+) {
   await slack.chat.postMessage({
-    channel: dm.channel.id,
+    channel,
     text: message,
   });
 }

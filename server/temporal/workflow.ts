@@ -37,6 +37,7 @@ import {
   condition,
   proxyActivities,
   defineQuery,
+  sleep,
 } from "@temporalio/workflow";
 import type * as activities from "./activities";
 
@@ -60,10 +61,14 @@ export const statusQuery = defineQuery<{
   decision: "APPROVED" | "REJECTED" | null;
 }>("status");
 
-const { sendApprovalEmail, sendSlackApprovalMessage, sendFinalResultEmail } =
-  proxyActivities<typeof activities>({
-    startToCloseTimeout: "2 minutes",
-  });
+const {
+  sendApprovalEmail,
+  sendSlackApprovalMessage,
+  sendFinalResultEmail,
+  sendPrivateChannelMessage,
+} = proxyActivities<typeof activities>({
+  startToCloseTimeout: "2 minutes",
+});
 
 export async function approvalWorkflow(
   requestId: string,
@@ -106,7 +111,20 @@ export async function approvalWorkflow(
   await sendSlackApprovalMessage(approverEmail, requestId);
   step = "SLACK_SENT";
 
-  // 4️⃣ Wait for Slack decision
+  // 4️⃣ Wait for decision OR timeout
+  const timeout = sleep("10 seconds");
+
+  await Promise.race([condition(() => decision !== null), timeout]);
+
+  // If no signal arrived → no user action
+  if (decision === null) {
+    await sendPrivateChannelMessage(
+      "C0ALSTZQPQS",
+      `User ${approverEmail} has not responded to request ${requestId}`,
+    );
+  }
+
+  // Continue waiting until user clicks approve/reject
   await condition(() => decision !== null);
 
   // 5️⃣ Send final result email
